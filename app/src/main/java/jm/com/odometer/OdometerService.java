@@ -19,8 +19,10 @@ import android.os.IBinder;
 public class OdometerService extends Service {
 
     private final IBinder binder = new OdometerBinder();
+    // We’re storing the distance traveled in meters and the last location as static private variables.
     private static double distanceInMeters;
     private static Location lastLocation = null;
+    // Create the listener as a private variable
     private LocationListener listener;
     private LocationManager locManager;
 
@@ -31,22 +33,33 @@ public class OdometerService extends Service {
     }
 
     @Override
+    // To allow the activity to bind to the service, we need to get
+    // the service to create the Binder object, and pass it to the
+    // activity using its onBind() method.
     public IBinder onBind(Intent intent) {
         return binder;
     }
 
     @Override
     public void onCreate() {
+        // This is the new LocationListener
         listener = new LocationListener() {
             @Override
+            // This method gets called whenever the LocationListener is told the device location has changed.
+            // The Location parameter describes the current location.
             public void onLocationChanged(Location location) {
                 if (lastLocation == null) {
+                    // if it’s our first location, set lastLocation to the current Location.
                     lastLocation = location;
                 }
+                // You can ind the distance in meters between two locations using the Location distanceTo() method.
                 distanceInMeters += location.distanceTo(lastLocation);
                 lastLocation = location;
             }
 
+            // We need to override these methods too,but they can be left empty. They get
+            // called when the GPS is enabled or disabled, or if its status has changed. We don’t
+            // need to react to any of these events.
             @Override
             public void onProviderDisabled(String arg0) {
             }

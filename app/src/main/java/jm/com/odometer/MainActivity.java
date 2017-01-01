@@ -15,11 +15,18 @@ public class MainActivity extends Activity {
     private OdometerService odometer;
     private boolean bound = false;
 
+    // A ServiceConnection is used to form a connection with the service.
     private ServiceConnection connection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder binder) {
+            // Get the Service Binder -  The bound service creates a Binder object.
+            // The Binder contains a reerence to the bound service. The service sends the Binder
+            // back along the connection.
             OdometerService.OdometerBinder odometerBinder =
                     (OdometerService.OdometerBinder) binder;
+            // Get the BoundService through the connection
+            // When the activity receives the Binder, it takes out the Service
+            // object and starts to use the service directly.
             odometer = odometerBinder.getOdometer();
             bound = true;
         }
@@ -37,6 +44,8 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    // The activity passes an Intent down the connection to the service.
+    // The intent contains any additional information the activity needs to pass to the service.
     protected void onStart() {
         super.onStart();
         Intent intent = new Intent(this, OdometerService.class);
