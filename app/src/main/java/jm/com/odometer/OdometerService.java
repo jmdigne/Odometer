@@ -1,10 +1,13 @@
 package jm.com.odometer;
 
+import android.Manifest;
 import android.app.Service;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.IBinder;
-
-
+//for logging
+import android.util.Log;
 // The class extends the Service class and not IntentService
 import android.app.Service;
 import android.content.Context;
@@ -15,6 +18,10 @@ import android.location.LocationManager;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
+// Check permission
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+
 
 public class OdometerService extends Service {
 
@@ -36,6 +43,7 @@ public class OdometerService extends Service {
     // To allow the activity to bind to the service, we need to get
     // the service to create the Binder object, and pass it to the
     // activity using its onBind() method.
+    // This gets called when the activity binds to the Service
     public IBinder onBind(Intent intent) {
         return binder;
     }
@@ -72,12 +80,31 @@ public class OdometerService extends Service {
             public void onStatusChanged(String arg0, int arg1, Bundle bundle) {
             }
         };
+        // A locationManager give you access to the Android location service
         locManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+
+        // Check Permission - if not application Crash !!
+        if ( Build.VERSION.SDK_INT >= 23 &&
+                ContextCompat.checkSelfPermission( this.getApplicationContext(), android.Manifest.permission.ACCESS_FINE_LOCATION ) != PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission( this.getApplicationContext(), android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return  ;
+        }
+
+        try   {
+        // Register the the location listener withe the location service
+        // and how often you want the listener to get updated --> 1000 = 1s and  1 = 1meter
         locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, listener);
+        } catch (Exception ex)  {
+            //LogService.log( "Error creating location service: " + ex.getMessage() );
+            Log.v("* OdometerService*", "Error creating location service: " + ex.getMessage());
+
+        }
     }
 
     @Override
     public void onDestroy() {
+        // Stop the location updates when the service is destroyed
         if (locManager != null && listener != null) {
             locManager.removeUpdates(listener);
             locManager = null;
@@ -85,7 +112,9 @@ public class OdometerService extends Service {
         }
     }
 
+    // Tell the activity the distance travelled (Meters to Miles conversion)
     public double getMiles() {
+        Log.v("* OdometerService*", " getMiles() called - Distance (meters): " + this.distanceInMeters);
         return this.distanceInMeters / 1609.344;
     }
 }
