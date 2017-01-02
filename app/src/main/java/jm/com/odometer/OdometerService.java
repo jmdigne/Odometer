@@ -50,17 +50,24 @@ public class OdometerService extends Service {
 
     @Override
     public void onCreate() {
+
+        Log.v("* OdometerService*", "onCreate() called");
+
         // This is the new LocationListener
         listener = new LocationListener() {
             @Override
             // This method gets called whenever the LocationListener is told the device location has changed.
             // The Location parameter describes the current location.
             public void onLocationChanged(Location location) {
+                Log.v("* OdometerService*", "onLocationChanged() called");
                 if (lastLocation == null) {
                     // if it’s our first location, set lastLocation to the current Location.
                     lastLocation = location;
                 }
-                // You can ind the distance in meters between two locations using the Location distanceTo() method.
+                // Trace location changes
+                Log.v("* OdometerService*", "LocationListener()" + location.getLongitude() + " " + location.getLatitude());
+
+                // You can find the distance in meters between two locations using the Location distanceTo() method.
                 distanceInMeters += location.distanceTo(lastLocation);
                 lastLocation = location;
             }
@@ -70,45 +77,49 @@ public class OdometerService extends Service {
             // need to react to any of these events.
             @Override
             public void onProviderDisabled(String arg0) {
+                Log.v("* OdometerService*", "onProviderDisabled()");
             }
 
             @Override
             public void onProviderEnabled(String arg0) {
+                Log.v("* OdometerService*", "onProviderEnabled()");
             }
 
             @Override
             public void onStatusChanged(String arg0, int arg1, Bundle bundle) {
+                Log.v("* OdometerService*", "onStatusChanged()");
             }
         };
+
         // A locationManager give you access to the Android location service
         locManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        Log.v("* OdometerService*", "onCreate() " + locManager.getAllProviders().toString());
+        Log.v("* OdometerService*", "onCreate() locManager.toString() =  " + locManager.toString());
 
 
-        // Check Permission - if not application Crash !!
-        if ( Build.VERSION.SDK_INT >= 23 &&
-                ContextCompat.checkSelfPermission( this.getApplicationContext(), android.Manifest.permission.ACCESS_FINE_LOCATION ) != PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission( this.getApplicationContext(), android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return  ;
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, listener);
+            Log.v("* OdometerService*", "onCreate() requestLocationUpdates() OK =  " + locManager.toString());
+        } else {
+            Log.v("* OdometerService*", "onCreate() requestLocationUpdates() PAS OK =  ");
         }
 
-        try   {
-        // Register the the location listener withe the location service
-        // and how often you want the listener to get updated --> 1000 = 1s and  1 = 1meter
-        locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, listener);
-        } catch (Exception ex)  {
-            //LogService.log( "Error creating location service: " + ex.getMessage() );
-            Log.v("* OdometerService*", "Error creating location service: " + ex.getMessage());
+            // Register the the location listener withe the location service
+            // and how often you want the listener to get updated --> 1000 = 1s and  1 = 1meter
+            //locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, listener);
 
-        }
+
     }
 
     @Override
     public void onDestroy() {
         // Stop the location updates when the service is destroyed
         if (locManager != null && listener != null) {
-            locManager.removeUpdates(listener);
-            locManager = null;
-            listener = null;
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                locManager.removeUpdates(listener);
+                locManager = null;
+                listener = null;
+            }
         }
     }
 
@@ -116,5 +127,10 @@ public class OdometerService extends Service {
     public double getMiles() {
         Log.v("* OdometerService*", " getMiles() called - Distance (meters): " + this.distanceInMeters);
         return this.distanceInMeters / 1609.344;
+    }
+
+    public double getKMs() {
+        Log.v("* OdometerService*", " getKMs() called - Distance (meters): " + this.distanceInMeters);
+        return this.distanceInMeters;
     }
 }
